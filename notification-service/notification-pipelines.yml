@@ -1,0 +1,54 @@
+trigger:
+  paths:
+    include:
+      - notification-service/**
+  branches:
+    include:
+      - main
+
+resources:
+- repo: self
+
+variables:
+  dockerRegistryServiceConnection: 'b3526c77-a859-44cf-a612-b0f0397e14c9'
+  imageRepository: 'notification-service'
+  containerRegistry: 'acrdocker.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/notification-service/Dockerfile'
+  tag: '$(Build.BuildId)'
+  vmImageName: 'ubuntu-latest'
+
+stages:
+- stage: BuildAndPush
+  jobs:
+
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+
+    steps:
+    - task: Docker@2
+      displayName: Build Image
+      inputs:
+        command: build
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        tags: |
+          $(tag)
+
+  - job: Push
+    displayName: Push
+    dependsOn: Build
+    pool:
+      vmImage: $(vmImageName)
+
+    steps:
+    - task: Docker@2
+      displayName: Build and Push Image
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)
